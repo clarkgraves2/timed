@@ -17,5 +17,7 @@
 
 int main(void) 
 {  
+    server_config_t config = config_init(); // Set default server configuration fields
+
     
 }
