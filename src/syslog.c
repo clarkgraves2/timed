@@ -28,7 +28,10 @@
 #define SYSLOG_TIMESTAMP_SIZE (32)
 
 // Format string for timestamp
-#define SYSLOG_TIMESTAMP_FORMAT "%Y-%m-%d %H:%M:%S"
+#define SYSLOG_TIMESTAMP_FORMAT ("%Y-%m-%d %H:%M:%S")
+
+// For SYSLOG type validation 
+#define SYSLOG_MAX_TYPE (CRITICAL)
 
 // Log message types 
 static const char * const SYSLOG_TYPE_STRINGS[] = 
@@ -44,35 +47,14 @@ static const char * const SYSLOG_TYPE_STRINGS[] =
 * Static Variables
 *************************************************************************/
 
+static FILE* g_log_file = NULL;
 static bool g_b_initialized = false;
-
 static pthread_mutex_t g_log_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-// Internal logging configuration derived from server config
-static struct 
-{
-    const char * file_path;
-    FILE * log_file;
-} g_log_config = 
-{
-    .file_path = NULL,
-    .log_file = NULL
-};
 
 /*************************************************************************
 * Private Function Prototypes
 *************************************************************************/
 
-/**
- * @brief Formats a log message with timestamp and type
- *
- * @param[out] p_buffer     Buffer to store formatted message
- * @param[in]  buffer_size  Size of buffer
- * @param[in]  type         Log message type
- * @param[in]  p_message    Message content
- *
- * @return True if formatting successful
- */
 static bool
 syslog_format_message(char * p_buffer, size_t buffer_size, syslog_type_t type, 
                     const char * p_message);
@@ -81,25 +63,34 @@ syslog_format_message(char * p_buffer, size_t buffer_size, syslog_type_t type,
 * Function Definitions
 *************************************************************************/
 
+/**
+ * @brief Initialize the logging subsystem
+ *
+ * @param[in] p_config  Pointer to server configuration
+ *
+ * @return True if initialization successful, false otherwise
+ */
 bool
 syslog_init(server_config_t * p_config)
 {
+    if (NULL == p_config)
+    {
+        return false;
+    }
+
     pthread_mutex_lock(&g_log_mutex);
 
-    if (g_b_initialized || (NULL == p_config))
+    if (g_b_initialized)
     {
         pthread_mutex_unlock(&g_log_mutex);
         return false;
     }
 
-    // Store logging configuration derived from server config
-    g_log_config.file_path = p_config->log_file;
-
     // Initialize log file
-    if (g_log_config.file_path)
+    if (p_config->log_file != NULL)
     {
-        g_log_config.log_file = fopen(g_log_config.file_path, "a");
-        if (NULL == g_log_config.log_file)
+        g_log_file = fopen(p_config->log_file, "a");
+        if (NULL == g_log_file)
         {
             pthread_mutex_unlock(&g_log_mutex);
             return false;
@@ -108,7 +99,7 @@ syslog_init(server_config_t * p_config)
     else
     {
         // Default to stdout if no file path provided
-        g_log_config.log_file = stdout;
+        g_log_file = stdout;
     }
 
     g_b_initialized = true;
@@ -127,21 +118,24 @@ syslog_write(syslog_type_t type, const char * p_format, ...)
     char display_message[MESSAGE_BUFFER];
     va_list args;
     bool b_result = false;
+    int vsnprintf_result;
 
     // Basic validation
-    if ((NULL == p_format) || (type > CRITICAL) || !g_b_initialized)
+    if ((NULL == p_format) || (type > SYSLOG_MAX_TYPE) || !g_b_initialized)
     {
         return false;
     }
 
     // Format message with variable arguments 
     va_start(args, p_format);
-    if (vsnprintf(formatted_message, sizeof(formatted_message), p_format, args) < 0)
+    vsnprintf_result = vsnprintf(formatted_message, sizeof(formatted_message), p_format, args);
+    va_end(args);
+    
+    // Check for formatting errors or truncation
+    if (vsnprintf_result < 0 || (size_t)vsnprintf_result >= sizeof(formatted_message))
     {
-        va_end(args);
         return false;
     }
-    va_end(args);
 
     pthread_mutex_lock(&g_log_mutex);
 
@@ -154,10 +148,14 @@ syslog_write(syslog_type_t type, const char * p_format, ...)
     }
 
     // Write message to log file
-    if (g_log_config.log_file != NULL)
+    if (g_log_file != NULL)
     {
-        fprintf(g_log_config.log_file, "%s", display_message);
-        fflush(g_log_config.log_file);
+        if (fprintf(g_log_file, "%s", display_message) < 0)
+        {
+            pthread_mutex_unlock(&g_log_mutex);
+            return false;
+        }
+        fflush(g_log_file);
         b_result = true;
     }
 
@@ -177,10 +175,10 @@ syslog_shutdown(void)
     }
 
     // Close file if open and not stdout
-    if (g_log_config.log_file != NULL && g_log_config.log_file != stdout)
+    if (g_log_file != NULL && g_log_file != stdout)
     {
-        fclose(g_log_config.log_file);
-        g_log_config.log_file = NULL;
+        fclose(g_log_file);
+        g_log_file = NULL;
     }
 
     g_b_initialized = false;
@@ -193,6 +191,16 @@ syslog_shutdown(void)
 * Private Function Definitions
 *************************************************************************/
 
+/**
+ * @brief Formats a log message with timestamp and type
+ *
+ * @param[out] p_buffer     Buffer to store formatted message
+ * @param[in]  buffer_size  Size of buffer
+ * @param[in]  type         Log message type
+ * @param[in]  p_message    Message content
+ *
+ * @return True if formatting successful
+ */
 static bool
 syslog_format_message(char * p_buffer, size_t buffer_size, syslog_type_t type, 
                     const char * p_message)
