@@ -17,7 +17,11 @@
 
 int main(void) 
 {  
-    server_config_t config = config_init(); // Set default server configuration fields
+    server_config_t config = config_init(); // Set default server configuration fields.
 
-    
+    if (!server_init(&config)) // Initialize server subsystems with config fields.
+    {
+        fprintf(stderr, "Failed to initialize server\n");
+        return EXIT_FAILURE;
+    }
 }
