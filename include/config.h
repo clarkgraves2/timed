@@ -13,23 +13,32 @@
  #include <stdbool.h>
 
 /*************************************************************************
- * Type Definitions
- *************************************************************************/
+* Type Definitions
+*************************************************************************/
 
 /**
-  * @brief Server configuration structure
-  */
- typedef struct server_config 
- {
-     // Network settings 
-     int port;                // Server listening port 
-     
-     // Thread management 
-     int num_worker_threads;  // Number of worker threads for the thread pool 
-     
-     // Logging configuration 
-     const char *log_file;    // Path to log file
+* @brief Server Configuration Structure
+*/
+typedef struct server_config 
+{
+    // Network settings 
+    int port;                // Server listening port 
+    
+    // Thread management 
+    int num_worker_threads;  // Number of worker threads for the thread pool 
+    
+    // Logging configuration 
+    const char * log_file;    // Path to log file
 
- } server_config_t;
+} server_config_t;
 
- #endif
+/*************************************************************************
+* Constants
+*************************************************************************/
+ 
+// Default server configuration 
+#define CONFIG_SERVER_PORT             (8080)
+#define CONFIG_SERVER_WORKER_THREADS   (4)
+#define CONFIG_SERVER_LOG_FILE         "server.log"
+
+#endif
