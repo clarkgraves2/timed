@@ -41,4 +41,13 @@ typedef struct server_config
 #define CONFIG_SERVER_WORKER_THREADS   (4)
 #define CONFIG_SERVER_LOG_FILE         "server.log"
 
-#endif
+/**
+ * @brief Create a server configuration with default values
+ *
+ * @return Default server configuration
+ */
+server_config_t config_init(void);
+
+#endif /* CONFIG_H */
+
+/*** end of file ***/
