@@ -27,6 +27,7 @@
      CRITICAL     // Critical condition 
  } syslog_type_t;
  
+ 
  /**
   * @brief Initialize the system logging facility
   *
