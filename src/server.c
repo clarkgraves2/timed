@@ -20,6 +20,7 @@
 
 #include "../include/syslog.h"
 #include "../include/server.h"
+#include "../include/signal_handler.h"
 
 /*************************************************************************
 * Types and Enums
@@ -62,6 +63,14 @@ server_init(const server_config_t *config)
     }
     
     syslog_write(INFO, "Configs Loaded, Server starting...");
+
+    if(!signal_handler_init())
+    {
+        syslog_write(CRITICAL, "Signal Handler failed to initialize.");
+        return false;
+    }
+
+    init_stage = INIT_SIGNALS;
 
     
 

@@ -49,8 +49,8 @@ static volatile sig_atomic_t g_initialized = 0;
 static void signal_handler(int signo);
 
 /*************************************************************************
- * Function Implementations
- *************************************************************************/
+* Function Implementations
+*************************************************************************/
 
 bool 
 signal_handler_init(void)
@@ -149,8 +149,8 @@ signal_handler_cleanup(void)
 }
 
 /*************************************************************************
- * Private Functions
- *************************************************************************/
+* Private Functions
+*************************************************************************/
 
 static void 
 signal_handler(int signo)
@@ -161,3 +161,5 @@ signal_handler(int signo)
     // The variable for the signal is not used but required for sigaction function.
     (void)signo;
 }
+
+/*** end of file ***/
