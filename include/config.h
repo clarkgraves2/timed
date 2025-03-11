@@ -33,6 +33,9 @@ typedef struct server_config
     // Poll configurations
     int poll_fds;           // Number of file descriptors for poll to monitor 
     int poll_timeout;       // Poll timeout in milliseconds 
+    
+    // Time format
+    const char * time_format;    // Default time format 
 
 } server_config_t;
 
@@ -41,11 +44,12 @@ typedef struct server_config
 *************************************************************************/
  
 // Default server configuration 
-#define CONFIG_SERVER_PORT             (8080)
+#define CONFIG_SERVER_PORT             (13)
 #define CONFIG_SERVER_WORKER_THREADS   (4)
 #define CONFIG_SERVER_LOG_FILE         "server.log"
 #define CONFIG_MAX_POLL_FDS            (1024)
 #define CONFIG_POLL_TIMEOUT            (1000)
+#define CONFIG_TIME_FORMAT             "%a %b %d %H:%M:%S %Y\r\n"
 
 /**
  * @brief Create a server configuration with default values
