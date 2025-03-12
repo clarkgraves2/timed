@@ -23,7 +23,7 @@
   * 
   * @return True if initialization successful, false otherwise
   */
- bool server_init(const server_config_t *config);
+ bool server_init(const server_config_t * config);
  
  /**
  * @brief Run the server main event loop
@@ -35,4 +35,14 @@
  */
 bool server_run(void);
 
- #endif /* SERVER_H */
+/**
+ * @brief Perform a graceful server shutdown
+ *
+ * This function cleans up all server resources and subsystems in the
+ * correct order to ensure a clean shutdown.
+ * 
+ * @return True if shutdown successful, false otherwise
+ */
+bool server_shutdown(void);
+
+#endif /* SERVER_H */

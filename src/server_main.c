@@ -24,4 +24,22 @@ int main(void)
         fprintf(stderr, "Failed to initialize server\n");
         return EXIT_FAILURE;
     }
+
+    if (!server_run())
+    {
+        fprintf(stderr, "Server terminated with errors\n");
+        server_shutdown();
+        return EXIT_FAILURE;
+    }
+    
+    if (!server_shutdown())
+    {
+        fprintf(stderr, "Failed to cleanly shut down server\n");
+        return EXIT_FAILURE;
+    }
+    
+    printf("Server shutdown complete\n");
+    return EXIT_SUCCESS;
 }
+
+/*** end of file ***/

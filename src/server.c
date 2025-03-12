@@ -46,7 +46,6 @@ typedef enum
  
  /* Server state */
  static volatile bool is_running = false;
- static server_config_t server_config = {0};
  static init_stage_t cleanup_stage = INIT_NONE;
  static socket_descriptor_t socket_descriptors = {-1, -1};
 
@@ -69,7 +68,7 @@ cleanup_server(init_stage_t stage);
 *************************************************************************/
  
 bool 
-server_init(const server_config_t *config)
+server_init(const server_config_t * config)
 {
     if (NULL == config) 
     {
@@ -89,7 +88,7 @@ server_init(const server_config_t *config)
 
     cleanup_stage = INIT_SIGNALS;
 
-    if(!socket_init(&config, &socket_descriptors))
+    if(!socket_init(config, &socket_descriptors))
     {
         syslog_write(CRITICAL, "Socket initialization failed");
         cleanup_server(cleanup_stage);
@@ -98,7 +97,7 @@ server_init(const server_config_t *config)
 
     cleanup_stage = INIT_SOCKET;
 
-    if (!poll_init(&server_config, &socket_descriptors))
+    if (!poll_init(config, &socket_descriptors))
     {
         syslog_write(CRITICAL, "Poll initialization failed");
         cleanup_server(cleanup_stage);
