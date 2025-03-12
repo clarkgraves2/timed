@@ -24,6 +24,11 @@ TARGET = timed
 # Header files
 INCLUDES = -I$(INC_DIR) -I.
 
+# Clang-tidy configuration
+CLANG_TIDY = clang-tidy
+CLANG_TIDY_CHECKS = -*,bugprone-*,cert-*,clang-analyzer-*,cppcoreguidelines-*,misc-*,performance-*,portability-*,readability-*,-readability-implicit-bool-conversion,-readability-magic-numbers
+CLANG_TIDY_CONFIG = -config="{Checks: '$(CLANG_TIDY_CHECKS)', WarningsAsErrors: '', HeaderFilterRegex: '.*', FormatStyle: 'none'}"
+
 # Default target
 .PHONY: all clean check dirs debug profile
 
@@ -62,6 +67,10 @@ test_runner: $(TEST_OBJS) $(filter-out $(OBJ_DIR)/server_main.o, $(OBJS))
 # Run all tests
 check: test_runner
 	./test_runner
+
+# Run clang-tidy on all source files
+tidy:
+	$(CLANG_TIDY) $(CLANG_TIDY_CONFIG) $(SRCS) -- $(CFLAGS) $(INCLUDES)
 
 clean:
 	rm -f $(TARGET) test_runner server.log
