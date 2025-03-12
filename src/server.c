@@ -84,7 +84,18 @@ server_init(const server_config_t *config)
 
     cleanup_stage = INIT_SOCKET;
 
-   
-
-
+    /* Initialize polling subsystem */
+    if (!poll_init(&server_config, &socket_descriptors))
+    {
+        syslog_write(CRITICAL, "Poll initialization failed");
+        cleanup_server(cleanup_stage);
+        return false;
+    }
+    
+    is_running = true;
+    syslog_write(INFO, "Server initialization complete");
+    cleanup_stage = INIT_COMPLETE;
+    
+    return true;
 }
+
