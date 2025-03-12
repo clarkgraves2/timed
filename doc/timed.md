@@ -2,7 +2,7 @@
 
 # Daytime Server
 
-Create a daemon that functions as a daytime protocol server. Use RFC 867 as a reference document, with an extension allowing custom formats.
+Create daytime protocol server. Use RFC 867 as a reference document, with an extension allowing custom formats.
 
 The server should be designed to support both TCP and UDP connections. Clients have the option to send a string defining the time format they are requesting (matching `strftime()` requirements). If client payload is empty, a default format should be returned.
 
