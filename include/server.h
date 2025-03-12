@@ -25,4 +25,14 @@
   */
  bool server_init(const server_config_t *config);
  
+ /**
+ * @brief Run the server main event loop
+ *
+ * This function starts the server main loop, which processes incoming
+ * connections and handles client requests until a shutdown is requested.
+ * 
+ * @return True if server terminated normally, false if an error occurred
+ */
+bool server_run(void);
+
  #endif /* SERVER_H */
