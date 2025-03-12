@@ -21,6 +21,7 @@
 #include "../include/syslog.h"
 #include "../include/server.h"
 #include "../include/signal_handler.h"
+#include "../include/socket.h"
 
 /*************************************************************************
 * Types and Enums
@@ -44,10 +45,10 @@ typedef enum
 *************************************************************************/
  
  /* Server state */
- static int server_socket = -1;
  static volatile bool is_running = false;
  static server_config_t server_config = {0};
- static init_stage_t init_stage = INIT_NONE;
+ static init_stage_t cleanup_stage = INIT_NONE;
+ static socket_descriptor_t socket_descriptors = {-1, -1};
 
 /*************************************************************************
 * Public Functions
@@ -59,6 +60,7 @@ server_init(const server_config_t *config)
     if (NULL == config) 
     {
         syslog_write(CRITICAL, "Server configs for initialization are NULL");
+        cleanup_server(cleanup_stage);
         return false;
     }
     
@@ -67,12 +69,21 @@ server_init(const server_config_t *config)
     if(!signal_handler_init())
     {
         syslog_write(CRITICAL, "Signal Handler failed to initialize.");
+        cleanup_server(cleanup_stage);
         return false;
     }
 
-    init_stage = INIT_SIGNALS;
+    cleanup_stage = INIT_SIGNALS;
 
-    
+    if(!socket_init(&config, &socket_descriptors))
+    {
+        syslog_write(CRITICAL, "Socket initialization failed");
+        cleanup_server(cleanup_stage);
+        return false;
+    }
+
+    cleanup_stage = INIT_SOCKET;
+
 
 
 }
