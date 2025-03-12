@@ -1,0 +1,1 @@
+Year: %Y, Month: %m (%B), Day: %d (%A), Time: %H:%M:%S, Timezone: %Z, UTC offset: %z, Week of year: %U, Day of year: %j

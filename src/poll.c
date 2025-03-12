@@ -207,7 +207,7 @@
      char time_buffer[MAX_BUFFER_SIZE] = {0};
      int client_fd = -1;
      ssize_t bytes_read = 0;
-     
+ 
      // Accept new connection
      client_fd = accept(tcp_socket, (struct sockaddr *)&client_addr, &addr_len);
      if (client_fd < 0)
@@ -215,87 +215,121 @@
          syslog_write(ERROR, "Failed to accept TCP connection: %s", strerror(errno));
          return;
      }
-     
+ 
      // Log client connection
      syslog_write(INFO, "TCP connection from %s:%d", 
                  inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
-     
+ 
      // Read client request (format string)
      bytes_read = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
-     if (bytes_read < 0)
-     {
-         syslog_write(ERROR, "Error reading from TCP client: %s", strerror(errno));
-         close(client_fd);
-         return;
-     }
      
+     // Handle various recv results
+     if (bytes_read < 0) {
+         if (errno == EAGAIN || errno == EWOULDBLOCK) {
+             // Timeout occurred - use default format
+             syslog_write(INFO, "Recv timeout - using default format");
+             bytes_read = 0;  // Treat as empty request
+         } else {
+             syslog_write(ERROR, "Error reading from TCP client: %s", strerror(errno));
+             close(client_fd);
+             return;
+         }
+     }
+ 
      // Null-terminate the request string
-     if (bytes_read > 0)
-     {
+     if (bytes_read > 0) {
          buffer[bytes_read] = '\0';
+         syslog_write(INFO, "Received format string from TCP client: '%s', length: %ld", buffer, bytes_read);
+     } else {
+         syslog_write(INFO, "Using default format (empty request)");
+         buffer[0] = '\0';  // Ensure empty string for default format
      }
-     
+ 
      // Format time according to request (or use default if empty)
-     if (!format_time(bytes_read > 0 ? buffer : NULL, time_buffer, sizeof(time_buffer)))
-     {
+     if (!format_time(bytes_read > 0 ? buffer : NULL, time_buffer, sizeof(time_buffer))) {
          syslog_write(ERROR, "Failed to format time for TCP client");
          close(client_fd);
          return;
      }
-     
+ 
+     // Debug: Log the formatted time
+     syslog_write(INFO, "Sending formatted time to TCP client: '%s'", time_buffer);
+ 
+     // Ensure there's a proper newline at the end if not already present
+     size_t time_len = strlen(time_buffer);
+     if (time_len > 0 && time_len < sizeof(time_buffer) - 2) {
+         // Check if the last characters are \r\n
+         if (!(time_buffer[time_len-2] == '\r' && time_buffer[time_len-1] == '\n')) {
+             // Check if the last character is \n
+             if (time_buffer[time_len-1] != '\n') {
+                 // Add \r\n to the end
+                 time_buffer[time_len] = '\r';
+                 time_buffer[time_len+1] = '\n';
+                 time_buffer[time_len+2] = '\0';
+             }
+         }
+     }
+ 
      // Send formatted time to client
-     if (send(client_fd, time_buffer, strlen(time_buffer), 0) < 0)
-     {
+     if (send(client_fd, time_buffer, strlen(time_buffer), 0) < 0) {
          syslog_write(ERROR, "Failed to send response to TCP client: %s", strerror(errno));
      }
-     
+ 
      // Close client connection
      close(client_fd);
  }
  
- static void
- handle_udp_datagram(int udp_socket)
- {
-     struct sockaddr_in client_addr;
-     socklen_t addr_len = sizeof(client_addr);
-     char buffer[MAX_BUFFER_SIZE] = {0};
-     char time_buffer[MAX_BUFFER_SIZE] = {0};
-     ssize_t bytes_read = 0;
-     
-     // Receive datagram
-     bytes_read = recvfrom(udp_socket, buffer, sizeof(buffer) - 1, 0,
-                         (struct sockaddr *)&client_addr, &addr_len);
-     
-     if (bytes_read < 0)
-     {
-         syslog_write(ERROR, "Error receiving UDP datagram: %s", strerror(errno));
-         return;
-     }
-     
-     // Log client request
-     syslog_write(INFO, "UDP request from %s:%d", 
-                 inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
-     
-     // Null-terminate the request string
-     if (bytes_read > 0)
-     {
-         buffer[bytes_read] = '\0';
-     }
-     
-     // Format time according to request (or use default if empty)
-     if (!format_time(bytes_read > 0 ? buffer : NULL, time_buffer, sizeof(time_buffer)))
-     {
-         syslog_write(ERROR, "Failed to format time for UDP client");
-         return;
-     }
-     
-     // Send formatted time to client
-     if (sendto(udp_socket, time_buffer, strlen(time_buffer), 0,
-               (struct sockaddr *)&client_addr, addr_len) < 0)
-     {
-         syslog_write(ERROR, "Failed to send response to UDP client: %s", strerror(errno));
-     }
- }
+static void
+handle_udp_datagram(int udp_socket)
+{
+    struct sockaddr_in client_addr;
+    socklen_t addr_len = sizeof(client_addr);
+    char buffer[MAX_BUFFER_SIZE] = {0};
+    char time_buffer[MAX_BUFFER_SIZE] = {0};
+    ssize_t bytes_read = 0;
+    
+    // Receive datagram
+    bytes_read = recvfrom(udp_socket, buffer, sizeof(buffer) - 1, 0,
+                        (struct sockaddr *)&client_addr, &addr_len);
+    
+    if (bytes_read < 0)
+    {
+        syslog_write(ERROR, "Error receiving UDP datagram: %s", strerror(errno));
+        return;
+    }
+    
+    // Log client request
+    syslog_write(INFO, "UDP request from %s:%d", 
+                inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+    
+    // Null-terminate the request string
+    if (bytes_read > 0)
+    {
+        buffer[bytes_read] = '\0';
+        syslog_write(INFO, "Received format string from UDP client: '%s', length: %ld", buffer, bytes_read);
+    }
+    else
+    {
+        syslog_write(INFO, "Received empty format string from UDP client (bytes_read=%ld)", bytes_read);
+    }
+    
+    // Format time according to request (or use default if empty)
+    if (!format_time(bytes_read > 0 ? buffer : NULL, time_buffer, sizeof(time_buffer)))
+    {
+        syslog_write(ERROR, "Failed to format time for UDP client");
+        return;
+    }
+    
+    // Debug: Log the formatted time
+    syslog_write(INFO, "Sending formatted time to UDP client: '%s'", time_buffer);
+    
+    // Send formatted time to client
+    if (sendto(udp_socket, time_buffer, strlen(time_buffer), 0,
+            (struct sockaddr *)&client_addr, addr_len) < 0)
+    {
+        syslog_write(ERROR, "Failed to send response to UDP client: %s", strerror(errno));
+    }
+}
  
 static bool
 format_time(const char *p_format_str, char *p_output, size_t output_size)
@@ -314,32 +348,49 @@ format_time(const char *p_format_str, char *p_output, size_t output_size)
         return false;
     }
     
-    // Check if format string is just a newline or only whitespace
-    bool is_only_whitespace = true;
-    if (p_format_str != NULL) 
+    // Check if format string is NULL or empty
+    if (p_format_str == NULL || p_format_str[0] == '\0')
     {
-        size_t i = 0;
-        while (p_format_str[i] != '\0') 
+        syslog_write(INFO, "Using default format: '%s'", server_cfg->time_format);
+        size_t result = strftime(p_output, output_size, server_cfg->time_format, &time_info);
+        if (result == 0)
         {
-            if (p_format_str[i] != ' ' && p_format_str[i] != '\t' && 
-                p_format_str[i] != '\n' && p_format_str[i] != '\r')
-            {
-                is_only_whitespace = false;
-                break;
-            }
-            i++;
+            syslog_write(ERROR, "Failed to format time with default format");
+            return false;
+        }
+        return true;
+    }
+    
+    // Check if format string contains only whitespace
+    bool is_only_whitespace = true;
+    for (size_t i = 0; p_format_str[i] != '\0'; i++) 
+    {
+        if (p_format_str[i] != ' ' && p_format_str[i] != '\t' && 
+            p_format_str[i] != '\n' && p_format_str[i] != '\r')
+        {
+            is_only_whitespace = false;
+            break;
         }
     }
     
     // Use provided format or default
-    const char *p_format = (NULL != p_format_str && p_format_str[0] != '\0' && !is_only_whitespace) 
-                          ? p_format_str 
-                          : server_cfg->time_format;
+    const char *p_format = is_only_whitespace ? server_cfg->time_format : p_format_str;
+    
+    syslog_write(INFO, "Formatting time with format: '%s'", p_format);
     
     // Format time
     size_t result = strftime(p_output, output_size, p_format, &time_info);
     
-    return (result > 0);
+    if (result > 0)
+    {
+        syslog_write(INFO, "Formatted time result: '%s'", p_output);
+        return true;
+    }
+    else
+    {
+        syslog_write(ERROR, "Failed to format time with format: '%s'", p_format);
+        return false;
+    }
 }
  
  /*** end of file ***/

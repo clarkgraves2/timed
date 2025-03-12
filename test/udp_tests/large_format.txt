@@ -1,0 +1,6 @@
+Full date: %A, %B %d, %Y
+Time: %H:%M:%S %Z
+Unix timestamp: %s
+Day of year: %j
+Week of year: %U
+Timezone: %Z (%z)

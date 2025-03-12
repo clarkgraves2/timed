@@ -9,6 +9,7 @@
 */
 
 #include "../include/syslog.h"
+
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdarg.h>
