@@ -8,20 +8,30 @@
 */
 
 #include "../include/config.h"
+#include <string.h>
 
-server_config_t config_init(void)
+/**
+ * @brief Initialize a server configuration with default values
+ *
+ * @param[out] p_config  Pointer to configuration structure to initialize
+ *
+ * @return True if initialization successful, false otherwise
+ */
+bool config_init(server_config_t *p_config)
 {
-    server_config_t config = 
+    if (NULL == p_config)
     {
-        .port =                CONFIG_SERVER_PORT,
-        .num_worker_threads =  CONFIG_SERVER_WORKER_THREADS,
-        .log_file =            CONFIG_SERVER_LOG_FILE,
-        .poll_fds =            CONFIG_MAX_POLL_FDS,
-        .poll_timeout =        CONFIG_POLL_TIMEOUT,
-        .time_format =      CONFIG_TIME_FORMAT
-    };
+        return false;
+    }
     
-    return config;
+    p_config->port = CONFIG_SERVER_PORT;
+    p_config->num_worker_threads = CONFIG_SERVER_WORKER_THREADS;
+    p_config->log_file = CONFIG_SERVER_LOG_FILE;
+    p_config->poll_fds = CONFIG_MAX_POLL_FDS;
+    p_config->poll_timeout = CONFIG_POLL_TIMEOUT;
+    p_config->time_format = CONFIG_TIME_FORMAT;
+    
+    return true;
 }
 
 /*** end of file ***/

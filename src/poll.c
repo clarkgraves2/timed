@@ -6,6 +6,8 @@
  * socket activity and dispatch to appropriate handlers when events occur.
  */
 
+ #define _POSIX_C_SOURCE 200809L
+
  #include <poll.h>
  #include <stdlib.h>
  #include <string.h>
@@ -13,6 +15,8 @@
  #include <unistd.h>
  #include <time.h>
  #include <sys/socket.h>
+ #include <sys/types.h>
+ #include <sys/poll.h>
  #include <netinet/in.h>
  #include <arpa/inet.h>
  
@@ -217,22 +221,29 @@
      
      // Read client request (format string)
      bytes_read = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
-     if (bytes_read < 0)
-     {
-         syslog_write(ERROR, "Error reading from TCP client: %s", strerror(errno));
-         close(client_fd);
-         return;
-     }
+    if (bytes_read < 0)
+    {
+        syslog_write(ERROR, "Error reading from TCP client: %s", strerror(errno));
+        close(client_fd);
+        return;
+    }
      
      // Null-terminate the request string
      if (bytes_read > 0)
      {
          buffer[bytes_read] = '\0';
      }
-     
-     // Format time according to request (or use default if empty)
-     if (!format_time(bytes_read > 0 ? buffer : NULL, time_buffer, sizeof(time_buffer)))
+
+     if (bytes_read == 1 && buffer[0] == '\n')
      {
+         // Treat as empty input - use default format
+         buffer[0] = '\0';
+         bytes_read = 0;
+     }
+     
+    // Format time according to request (or use default if empty)
+    if (!format_time(bytes_read > 0 ? buffer : NULL, time_buffer, sizeof(time_buffer)))
+    {
          syslog_write(ERROR, "Failed to format time for TCP client");
          close(client_fd);
          return;

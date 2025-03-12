@@ -8,38 +8,59 @@
  * it shutsdown gracefully.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-
-#include "./include/config.h"
-#include "./include/syslog.h"
-#include "./include/server.h"
-
-int main(void) 
-{  
-    server_config_t config = config_init(); // Set default server configuration fields.
-
-    if (!server_init(&config)) // Initialize server subsystems with config fields.
-    {
-        fprintf(stderr, "Failed to initialize server\n");
-        return EXIT_FAILURE;
-    }
-
-    if (!server_run())
-    {
-        fprintf(stderr, "Server terminated with errors\n");
-        server_shutdown();
-        return EXIT_FAILURE;
-    }
-    
-    if (!server_shutdown())
-    {
-        fprintf(stderr, "Failed to cleanly shut down server\n");
-        return EXIT_FAILURE;
-    }
-    
-    printf("Server shutdown complete\n");
-    return EXIT_SUCCESS;
-}
-
-/*** end of file ***/
+ #include <stdio.h>
+ #include <stdlib.h>
+ 
+ #include "./include/config.h"
+ #include "./include/syslog.h"
+ #include "./include/server.h"
+ 
+ int main(void) 
+ {  
+     server_config_t config;
+     
+     // Initialize config with default values
+     if (!config_init(&config))
+     {
+         fprintf(stderr, "Failed to initialize server configuration\n");
+         return EXIT_FAILURE;
+     }
+     
+     // Initialize logging system
+     if (!syslog_init(&config))
+     {
+         fprintf(stderr, "Failed to initialize logging system\n");
+         return EXIT_FAILURE;
+     }
+     
+     // Log server startup
+     syslog_write(INFO, "Timed server starting up...");
+     
+     // Initialize server subsystems with config fields
+     if (!server_init(&config))
+     {
+         syslog_write(CRITICAL, "Failed to initialize server");
+         syslog_shutdown();
+         return EXIT_FAILURE;
+     }
+ 
+     if (!server_run())
+     {
+         syslog_write(ERROR, "Server terminated with errors");
+         server_shutdown();
+         return EXIT_FAILURE;
+     }
+     
+     if (!server_shutdown())
+     {
+         syslog_write(ERROR, "Failed to cleanly shut down server");
+         return EXIT_FAILURE;
+     }
+     
+     syslog_write(INFO, "Server shutdown complete");
+     syslog_shutdown();
+     
+     return EXIT_SUCCESS;
+ }
+ 
+ /*** end of file ***/
