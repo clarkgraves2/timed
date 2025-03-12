@@ -6,6 +6,7 @@
  * socket activity and dispatch to appropriate handlers when events occur.
  */
 
+// NOLINTNEXTLINE(bugprone-reserved-identifier,cert-dcl37-c,cert-dcl51-cpp)
  #define _POSIX_C_SOURCE 200809L
 
  #include <poll.h>
@@ -38,16 +39,16 @@
  *************************************************************************/
  
  // Poll file descriptors array
- static struct pollfd *p_poll_fds = NULL;
+ static struct pollfd *poll_fds = NULL;
  
  // Number of file descriptors being monitored
  static size_t num_fds = 0;
  
  // Socket descriptors reference
- static const socket_descriptor_t *p_socket_desc = NULL;
+ static const socket_descriptor_t *socket_desc = NULL;
  
  // Server configuration reference
- static const server_config_t *p_server_cfg = NULL;
+ static const server_config_t *server_cfg = NULL;
  
  /*************************************************************************
  * Static Function Prototypes
@@ -100,25 +101,25 @@
      }
      
      // Store config and descriptors
-     p_server_cfg = p_config;
-     p_socket_desc = p_descriptors;
+     server_cfg = p_config;
+     socket_desc = p_descriptors;
      
      // Allocate poll fds array
      num_fds = 2; // TCP and UDP sockets
-     p_poll_fds = calloc(num_fds, sizeof(struct pollfd));
-     if (NULL == p_poll_fds)
+     poll_fds = calloc(num_fds, sizeof(struct pollfd));
+     if (NULL == poll_fds)
      {
          syslog_write(CRITICAL, "Failed to allocate memory for poll fds");
          return false;
      }
      
      // Set up TCP socket for polling
-     p_poll_fds[0].fd = p_descriptors->tcp_socket;
-     p_poll_fds[0].events = POLLIN;
+     poll_fds[0].fd = p_descriptors->tcp_socket;
+     poll_fds[0].events = POLLIN;
      
      // Set up UDP socket for polling
-     p_poll_fds[1].fd = p_descriptors->udp_socket;
-     p_poll_fds[1].events = POLLIN;
+     poll_fds[1].fd = p_descriptors->udp_socket;
+     poll_fds[1].events = POLLIN;
      
      syslog_write(INFO, "Poll subsystem initialized with %zu fds", num_fds);
      return true;
@@ -127,7 +128,7 @@
  bool 
  poll_run(void)
  {
-     if (NULL == p_poll_fds || NULL == p_server_cfg || NULL == p_socket_desc)
+     if (NULL == poll_fds || NULL == server_cfg || NULL == socket_desc)
      {
          syslog_write(ERROR, "Poll subsystem not initialized");
          return false;
@@ -138,7 +139,7 @@
      while (!signal_handler_shutdown_requested())
      {
          // Wait for events
-         int poll_result = poll(p_poll_fds, (nfds_t)num_fds, p_server_cfg->poll_timeout);
+         int poll_result = poll(poll_fds, (nfds_t)num_fds, server_cfg->poll_timeout);
          
          // Check for errors
          if (poll_result < 0)
@@ -160,15 +161,15 @@
          }
          
          // Check for TCP events
-         if (p_poll_fds[0].revents & POLLIN)
+         if (poll_fds[0].revents & POLLIN)
          {
-             handle_tcp_connection(p_socket_desc->tcp_socket);
+             handle_tcp_connection(socket_desc->tcp_socket);
          }
          
          // Check for UDP events
-         if (p_poll_fds[1].revents & POLLIN)
+         if (poll_fds[1].revents & POLLIN)
          {
-             handle_udp_datagram(p_socket_desc->udp_socket);
+             handle_udp_datagram(socket_desc->udp_socket);
          }
      }
      
@@ -179,15 +180,15 @@
  bool 
  poll_cleanup(void)
  {
-     if (NULL != p_poll_fds)
+     if (NULL != poll_fds)
      {
-         free(p_poll_fds);
-         p_poll_fds = NULL;
+         free(poll_fds);
+         poll_fds = NULL;
      }
      
      num_fds = 0;
-     p_socket_desc = NULL;
-     p_server_cfg = NULL;
+     socket_desc = NULL;
+     server_cfg = NULL;
      
      syslog_write(INFO, "Poll subsystem cleaned up");
      return true;
@@ -204,8 +205,8 @@
      socklen_t addr_len = sizeof(client_addr);
      char buffer[MAX_BUFFER_SIZE] = {0};
      char time_buffer[MAX_BUFFER_SIZE] = {0};
-     int client_fd;
-     ssize_t bytes_read;
+     int client_fd = -1;
+     ssize_t bytes_read = 0;
      
      // Accept new connection
      client_fd = accept(tcp_socket, (struct sockaddr *)&client_addr, &addr_len);
@@ -221,29 +222,22 @@
      
      // Read client request (format string)
      bytes_read = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
-    if (bytes_read < 0)
-    {
-        syslog_write(ERROR, "Error reading from TCP client: %s", strerror(errno));
-        close(client_fd);
-        return;
-    }
+     if (bytes_read < 0)
+     {
+         syslog_write(ERROR, "Error reading from TCP client: %s", strerror(errno));
+         close(client_fd);
+         return;
+     }
      
      // Null-terminate the request string
      if (bytes_read > 0)
      {
          buffer[bytes_read] = '\0';
      }
-
-     if (bytes_read == 1 && buffer[0] == '\n')
-     {
-         // Treat as empty input - use default format
-         buffer[0] = '\0';
-         bytes_read = 0;
-     }
      
-    // Format time according to request (or use default if empty)
-    if (!format_time(bytes_read > 0 ? buffer : NULL, time_buffer, sizeof(time_buffer)))
-    {
+     // Format time according to request (or use default if empty)
+     if (!format_time(bytes_read > 0 ? buffer : NULL, time_buffer, sizeof(time_buffer)))
+     {
          syslog_write(ERROR, "Failed to format time for TCP client");
          close(client_fd);
          return;
@@ -266,7 +260,7 @@
      socklen_t addr_len = sizeof(client_addr);
      char buffer[MAX_BUFFER_SIZE] = {0};
      char time_buffer[MAX_BUFFER_SIZE] = {0};
-     ssize_t bytes_read;
+     ssize_t bytes_read = 0;
      
      // Receive datagram
      bytes_read = recvfrom(udp_socket, buffer, sizeof(buffer) - 1, 0,
@@ -306,16 +300,15 @@
  static bool
  format_time(const char *p_format_str, char *p_output, size_t output_size)
  {
-     time_t now;
+     time_t now = time(NULL);
      struct tm time_info;
      
-     if (NULL == p_output || output_size == 0)
+     if (NULL == p_output || output_size == 0 || now == (time_t)-1)
      {
          return false;
      }
      
      // Get current time
-     now = time(NULL);
      if (NULL == localtime_r(&now, &time_info))
      {
          return false;
@@ -324,7 +317,7 @@
      // Use provided format or default
      const char *p_format = (NULL != p_format_str && p_format_str[0] != '\0') 
                            ? p_format_str 
-                           : p_server_cfg->time_format;
+                           : server_cfg->time_format;
      
      // Format time
      size_t result = strftime(p_output, output_size, p_format, &time_info);
