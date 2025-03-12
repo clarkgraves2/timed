@@ -13,44 +13,44 @@
 #include "../include/config.h"
 
 /**
- * @brief Socket context structure to manage socket file descriptors
+ * @brief Structure to manage socket file descriptors
  */
 typedef struct {
-    int tcp_socket;   /* TCP socket file descriptor */
-    int udp_socket;   /* UDP socket file descriptor */
-} socket_context_t;
+    int tcp_socket;   // TCP socket file descriptor 
+    int udp_socket;   // UDP socket file descriptor 
+} socket_descriptor_t;
 
 /**
- * @brief Initialize the socket context with TCP and UDP sockets
+ * @brief Initialize the socket descriptors with TCP and UDP sockets
  *
  * Creates, configures, and binds both TCP and UDP sockets according
  * to the provided server configuration.
  *
  * @param[in] config Pointer to server configuration
- * @param[out] context Pointer to socket context to be initialized
+ * @param[out] descriptors Pointer to socket descriptors to be initialized
  * 
  * @return true if initialization was successful, false otherwise
  */
-bool socket_init(const server_config_t *config, socket_context_t *context);
+bool socket_init(const server_config_t * config, socket_descriptor_t * descriptors);
 
 /**
  * @brief Clean up socket resources
  *
- * Closes open socket file descriptors and resets the socket context.
+ * Closes open socket file descriptors and resets the socket descriptors.
  *
- * @param[in,out] context Pointer to socket context to be cleaned up
+ * @param[in,out] descriptors Pointer to socket descriptors to be cleaned up
  * 
  * @return true if cleanup was successful, false otherwise
  */
-bool socket_cleanup(socket_context_t *context);
+bool socket_cleanup(socket_descriptor_t * descriptors);
 
 /**
- * @brief Check if a socket context is valid
+ * @brief Check if a socket descriptors is valid
  *
- * @param[in] context Pointer to socket context to check
+ * @param[in] descriptors Pointer to socket descriptors to check
  * 
- * @return true if context is valid, false otherwise
+ * @return true if descriptors is valid, false otherwise
  */
-bool socket_is_valid(const socket_context_t *context);
+bool socket_is_valid(const socket_descriptor_t * descriptors);
 
 #endif /* SOCKET_H */
