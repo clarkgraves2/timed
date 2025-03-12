@@ -17,7 +17,7 @@
  *
  * @return True if initialization successful, false otherwise
  */
-bool config_init(server_config_t *p_config)
+bool config_init(server_config_t * p_config)
 {
     if (NULL == p_config)
     {
