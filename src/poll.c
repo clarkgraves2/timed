@@ -297,32 +297,49 @@
      }
  }
  
- static bool
- format_time(const char *p_format_str, char *p_output, size_t output_size)
- {
-     time_t now = time(NULL);
-     struct tm time_info;
-     
-     if (NULL == p_output || output_size == 0 || now == (time_t)-1)
-     {
-         return false;
-     }
-     
-     // Get current time
-     if (NULL == localtime_r(&now, &time_info))
-     {
-         return false;
-     }
-     
-     // Use provided format or default
-     const char *p_format = (NULL != p_format_str && p_format_str[0] != '\0') 
-                           ? p_format_str 
-                           : server_cfg->time_format;
-     
-     // Format time
-     size_t result = strftime(p_output, output_size, p_format, &time_info);
-     
-     return (result > 0);
- }
+static bool
+format_time(const char *p_format_str, char *p_output, size_t output_size)
+{
+    time_t now = time(NULL);
+    struct tm time_info;
+    
+    if (NULL == p_output || output_size == 0 || now == (time_t)-1)
+    {
+        return false;
+    }
+    
+    // Get current time
+    if (NULL == localtime_r(&now, &time_info))
+    {
+        return false;
+    }
+    
+    // Check if format string is just a newline or only whitespace
+    bool is_only_whitespace = true;
+    if (p_format_str != NULL) 
+    {
+        size_t i = 0;
+        while (p_format_str[i] != '\0') 
+        {
+            if (p_format_str[i] != ' ' && p_format_str[i] != '\t' && 
+                p_format_str[i] != '\n' && p_format_str[i] != '\r')
+            {
+                is_only_whitespace = false;
+                break;
+            }
+            i++;
+        }
+    }
+    
+    // Use provided format or default
+    const char *p_format = (NULL != p_format_str && p_format_str[0] != '\0' && !is_only_whitespace) 
+                          ? p_format_str 
+                          : server_cfg->time_format;
+    
+    // Format time
+    size_t result = strftime(p_output, output_size, p_format, &time_info);
+    
+    return (result > 0);
+}
  
  /*** end of file ***/
