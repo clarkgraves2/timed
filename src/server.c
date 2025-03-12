@@ -84,6 +84,7 @@ server_init(const server_config_t *config)
 
     cleanup_stage = INIT_SOCKET;
 
+    if(poll)
 
 
 }
