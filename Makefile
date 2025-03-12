@@ -29,8 +29,12 @@ CLANG_TIDY = clang-tidy
 CLANG_TIDY_CHECKS = -*,bugprone-*,cert-*,clang-analyzer-*,cppcoreguidelines-*,misc-*,performance-*,portability-*,readability-*,-readability-implicit-bool-conversion,-readability-magic-numbers
 CLANG_TIDY_CONFIG = -config="{Checks: '$(CLANG_TIDY_CHECKS)', WarningsAsErrors: '', HeaderFilterRegex: '.*', FormatStyle: 'none'}"
 
+# Valgrind configuration
+VALGRIND = valgrind
+VALGRIND_FLAGS = --leak-check=full --show-leak-kinds=all --track-origins=yes --verbose
+
 # Default target
-.PHONY: all clean check dirs debug profile
+.PHONY: all clean check dirs debug profile valgrind
 
 all: dirs $(TARGET)
 
@@ -67,6 +71,10 @@ test_runner: $(TEST_OBJS) $(filter-out $(OBJ_DIR)/server_main.o, $(OBJS))
 # Run all tests
 check: test_runner
 	./test_runner
+
+# Run Valgrind on the server executable (built with debug symbols)
+valgrind: debug
+	$(VALGRIND) $(VALGRIND_FLAGS) ./$(TARGET)
 
 # Run clang-tidy on all source files
 tidy:

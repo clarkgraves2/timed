@@ -45,7 +45,7 @@
  *************************************************************************/
   
  /* Server state */
- static volatile bool is_running = false;
+ static volatile bool server_running = false;
  static init_stage_t cleanup_stage = INIT_NONE;
  static socket_descriptor_t socket_descriptors = {-1, -1};
  
@@ -109,7 +109,7 @@
      cleanup_stage = INIT_POLL;
      syslog_write(INFO, "Poll subsystem initialized successfully");
      
-     is_running = true;
+     server_running = true;
      syslog_write(INFO, "Server initialization complete");
      cleanup_stage = INIT_COMPLETE;
      
@@ -121,7 +121,7 @@
  {
      bool result = false;
      
-     if (!is_running || cleanup_stage != INIT_COMPLETE)
+     if (!server_running || cleanup_stage != INIT_COMPLETE)
      {
          syslog_write(ERROR, "Attempted to run server before complete initialization");
          return false;
@@ -147,14 +147,14 @@
  bool 
  server_shutdown(void)
  {
-     if (!is_running)
+     if (!server_running)
      {
          syslog_write(WARNING, "Attempted to shut down server that is not running");
          return false;
      }
      
      syslog_write(INFO, "Server shutting down...");
-     is_running = false;
+     server_running = false;
      
      /* Clean up from the current stage */
      return cleanup_server(cleanup_stage);
@@ -220,7 +220,7 @@
              break;
      }
      
-     is_running = false;
+     server_running = false;
      cleanup_stage = INIT_NONE;
      return success;
  }

@@ -39,7 +39,7 @@ static const char * const SYSLOG_TYPE_STRINGS[] =
     "INFO",     
     "WARNING",  
     "ERROR",    
-    "DEBUG",    
+    "DEBUG_LOG",    
     "CRITICAL"  
 };
 
@@ -47,9 +47,9 @@ static const char * const SYSLOG_TYPE_STRINGS[] =
 * Static Variables
 *************************************************************************/
 
-static FILE* g_log_file = NULL;
-static bool g_b_initialized = false;
-static pthread_mutex_t g_log_mutex = PTHREAD_MUTEX_INITIALIZER;
+static FILE* log_file = NULL;
+static bool initialized = false;
+static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /*************************************************************************
 * Private Function Prototypes
@@ -78,32 +78,32 @@ syslog_init(server_config_t * p_config)
         return false;
     }
 
-    pthread_mutex_lock(&g_log_mutex);
+    pthread_mutex_lock(&log_mutex);
 
-    if (g_b_initialized)
+    if (initialized)
     {
-        pthread_mutex_unlock(&g_log_mutex);
+        pthread_mutex_unlock(&log_mutex);
         return false;
     }
 
     // Initialize log file
     if (p_config->log_file != NULL)
     {
-        g_log_file = fopen(p_config->log_file, "a");
-        if (NULL == g_log_file)
+        log_file = fopen(p_config->log_file, "a");
+        if (NULL == log_file)
         {
-            pthread_mutex_unlock(&g_log_mutex);
+            pthread_mutex_unlock(&log_mutex);
             return false;
         }
     }
     else
     {
         // Default to stdout if no file path provided
-        g_log_file = stdout;
+        log_file = stdout;
     }
 
-    g_b_initialized = true;
-    pthread_mutex_unlock(&g_log_mutex);
+    initialized = true;
+    pthread_mutex_unlock(&log_mutex);
     
     // Log initialization message
     syslog_write(INFO, "Logging system initialized");
@@ -118,10 +118,10 @@ syslog_write(syslog_type_t type, const char * p_format, ...)
     char display_message[MESSAGE_BUFFER];
     va_list args;
     bool b_result = false;
-    int vsnprintf_result;
+    int vsnprintf_result = 0;
 
     // Basic validation
-    if ((NULL == p_format) || (type > SYSLOG_MAX_TYPE) || !g_b_initialized)
+    if ((NULL == p_format) || (type > SYSLOG_MAX_TYPE) || !initialized)
     {
         return false;
     }
@@ -137,53 +137,56 @@ syslog_write(syslog_type_t type, const char * p_format, ...)
         return false;
     }
 
-    pthread_mutex_lock(&g_log_mutex);
+    pthread_mutex_lock(&log_mutex);
 
     // Format the message with timestamp and type
     if (!syslog_format_message(display_message, sizeof(display_message), 
                             type, formatted_message))
     {
-        pthread_mutex_unlock(&g_log_mutex);
+        pthread_mutex_unlock(&log_mutex);
         return false;
     }
 
     // Write message to log file
-    if (g_log_file != NULL)
+    if (log_file != NULL)
     {
-        if (fprintf(g_log_file, "%s", display_message) < 0)
+        if (fprintf(log_file, "%s", display_message) < 0)
         {
-            pthread_mutex_unlock(&g_log_mutex);
+            pthread_mutex_unlock(&log_mutex);
             return false;
         }
-        fflush(g_log_file);
+        
+        // Use void cast to silence warning about unused return value
+        (void)fflush(log_file);
         b_result = true;
     }
 
-    pthread_mutex_unlock(&g_log_mutex);
+    pthread_mutex_unlock(&log_mutex);
     return b_result;
 }
 
 bool
 syslog_shutdown(void)
 {
-    pthread_mutex_lock(&g_log_mutex);
+    pthread_mutex_lock(&log_mutex);
 
-    if (!g_b_initialized)
+    if (!initialized)
     {
-        pthread_mutex_unlock(&g_log_mutex);
+        pthread_mutex_unlock(&log_mutex);
         return false;
     }
 
     // Close file if open and not stdout
-    if (g_log_file != NULL && g_log_file != stdout)
+    if (log_file != NULL && log_file != stdout)
     {
-        fclose(g_log_file);
-        g_log_file = NULL;
+        // Use void cast to silence warning about unused return value
+        (void)fclose(log_file);
+        log_file = NULL;
     }
 
-    g_b_initialized = false;
+    initialized = false;
 
-    pthread_mutex_unlock(&g_log_mutex);
+    pthread_mutex_unlock(&log_mutex);
     return true;
 }
 
@@ -206,17 +209,16 @@ syslog_format_message(char * p_buffer, size_t buffer_size, syslog_type_t type,
                     const char * p_message)
 {
     struct tm time_info;
-    time_t now;
+    time_t now = time(NULL);
     char timestamp[SYSLOG_TIMESTAMP_SIZE];
     int written = 0;
 
-    if (NULL == p_buffer || buffer_size == 0 || NULL == p_message || type > CRITICAL)
+    if (NULL == p_buffer || buffer_size == 0 || NULL == p_message || type > CRITICAL || now == (time_t)-1)
     {
         return false;
     }
 
     // Get current time
-    now = time(NULL);
     if (NULL == localtime_r(&now, &time_info))
     {
         return false;

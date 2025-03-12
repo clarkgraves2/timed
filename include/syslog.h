@@ -23,7 +23,7 @@
      INFO = 0,    // Informational message 
      WARNING,     // Warning condition 
      ERROR,       // Error condition 
-     DEBUG,       // Debug-level message 
+     DEBUG_LOG,       // Debug-level message 
      CRITICAL     // Critical condition 
  } syslog_type_t;
  
