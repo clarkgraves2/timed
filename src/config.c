@@ -25,7 +25,6 @@ bool config_init(server_config_t *p_config)
     }
     
     p_config->port = CONFIG_SERVER_PORT;
-    p_config->num_worker_threads = CONFIG_SERVER_WORKER_THREADS;
     p_config->log_file = CONFIG_SERVER_LOG_FILE;
     p_config->poll_fds = CONFIG_MAX_POLL_FDS;
     p_config->poll_timeout = CONFIG_POLL_TIMEOUT;

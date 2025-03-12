@@ -45,7 +45,6 @@
   
  // Default server configuration 
  #define CONFIG_SERVER_PORT             (8013)
- #define CONFIG_SERVER_WORKER_THREADS   (4)
  #define CONFIG_SERVER_LOG_FILE         "server.log"
  #define CONFIG_MAX_POLL_FDS            (1024)
  #define CONFIG_POLL_TIMEOUT            (1000)
