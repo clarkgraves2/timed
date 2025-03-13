@@ -1,1 +1,0 @@
-Day of week: %w (0=Sunday)

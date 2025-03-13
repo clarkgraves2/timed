@@ -1,3 +1,0 @@
-The current date is %A, the %d of %B in the year %Y.
-The time is currently %H hours, %M minutes, and %S seconds (%Z timezone).
-Have a wonderful day!
