@@ -4,7 +4,9 @@ We are creating a daytime protocol server. A client can connect and request the 
 ![](./initial_design.png)
 
 # Design (Final) / Control Flow
-
+![](./final_design.png)
+# Module Relationship 
+![](./modulerelationship.png)
 # Priorities of Work
 1. Build Base Server with configurations and initialization to get ready for protocol implementation.
 2. Research the strftime() function to see all the different formats that can be requested by the client.

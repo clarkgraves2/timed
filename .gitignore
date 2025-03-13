@@ -9,6 +9,7 @@
 *.obsidian
 *.vscode
 
+
 # Linker output
 *.ilk
 *.map
