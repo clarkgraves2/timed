@@ -1,0 +1,203 @@
+---
+Language:        Cpp
+# BasedOnStyle:  LLVM
+# Section 3.2 Alignment
+AlignAfterOpenBracket: Align
+# Section 3.2 Alignment
+AlignArrayOfStructures: Right
+# Section 3.2 Alignment
+AlignConsecutiveMacros: AcrossEmptyLinesAndComments
+# Section 3.2 Alignment
+AlignConsecutiveAssignments: AcrossEmptyLinesAndComments
+# Section 3.2 Alignment
+AlignConsecutiveBitFields: AcrossEmptyLinesAndComments
+# Section 3.2 Alignment
+AlignConsecutiveDeclarations: AcrossEmptyLinesAndComments
+# Section 3.2 Alignment
+AlignOperands: Align
+# Section 3.2 Alignment
+AlignTrailingComments: true
+# Section 1.2a Line Widths
+AllowAllArgumentsOnNextLine: true
+# Section 1.2a Line Widths
+AllowAllParametersOfDeclarationOnNextLine: true
+# Section 3.3a Blank Lines
+AllowShortEnumsOnASingleLine: false
+# Section 3.3a Blank Lines
+AllowShortBlocksOnASingleLine: Never
+# Section 3.3a Blank Lines
+AllowShortCaseLabelsOnASingleLine: false
+# Section 3.3a Blank Lines
+AllowShortFunctionsOnASingleLine: None
+# Section 3.3a Blank Lines
+AllowShortLambdasOnASingleLine: None
+# Section 3.3a Blank Lines
+AllowShortIfStatementsOnASingleLine: Never
+# Section 3.3a Blank Lines
+AllowShortLoopsOnASingleLine: false
+# Deprecated Kept for Backwards Compatibility
+AlwaysBreakAfterDefinitionReturnType: None
+# Section 3.3a Blank Lines
+AlwaysBreakAfterReturnType: AllDefinitions
+# Section 3.4c Indentation
+AlwaysBreakBeforeMultilineStrings: false
+# Section 3.3a Blank Lines
+BinPackArguments: false
+# Section 3.3a Blank Lines
+BinPackParameters: false
+# Section 3.1f Spaces
+BitFieldColonSpacing: Both
+# Declares individual rules for BraceWrapping
+BreakBeforeBraces: Custom
+# Section 1.3 a + b Braces
+BraceWrapping:
+  AfterCaseLabel:  false
+  AfterControlStatement: Always
+  AfterEnum:       false
+  AfterFunction:   true
+  AfterNamespace:  true
+  AfterObjCDeclaration: false
+  AfterStruct:     true
+  AfterUnion:      true
+  AfterExternBlock: true
+  BeforeCatch:     true
+  BeforeElse:      true
+  BeforeWhile:     true
+  IndentBraces:    false
+  SplitEmptyFunction: true
+  SplitEmptyRecord: true
+  SplitEmptyNamespace: true
+# 3.2c Alignment
+BreakBeforeBinaryOperators: All
+# Section 3.3a Blank Lines
+BreakAfterJavaFieldAnnotations: true
+# Section 1.2a Line Widths
+BreakStringLiterals: true
+# Section 1.2a Line Widths
+ColumnLimit:     80
+# Section 1.8b Keywords to Frequent
+QualifierAlignment: Left
+# Section 3.3a Blank Lines
+CompactNamespaces: false
+# Section 3.4a Indentation
+ConstructorInitializerIndentWidth: 4
+# Section 3.4a Indentation
+ContinuationIndentWidth: 4
+# Analyze for the most used line endings. 
+DeriveLineEnding: true
+# Optional Rule to analyze and format * and & 
+DerivePointerAlignment: false
+# Used to disable formatting completely in this file
+DisableFormat:   false
+# Section 3.3 Blank Lines
+EmptyLineAfterAccessModifier: Never
+# Section 3.3 Blank Lines
+EmptyLineBeforeAccessModifier: LogicalBlock
+BasedOnStyle:    ''
+# No Rule is REGEX for sorting the #include block
+IncludeBlocks:   Preserve
+IncludeCategories:
+  - Regex:           '^"(llvm|llvm-c|clang|clang-c)/'
+    Priority:        2
+    SortPriority:    0
+    CaseSensitive:   false
+  - Regex:           '^(<|"(gtest|gmock|isl|json)/)'
+    Priority:        3
+    SortPriority:    0
+    CaseSensitive:   false
+  - Regex:           '.*'
+    Priority:        1
+    SortPriority:    0
+    CaseSensitive:   false
+IncludeIsMainRegex: '(Test)?$'
+IncludeIsMainSourceRegex: ''
+# Section 8.3a Switch Statements
+IndentCaseLabels: true
+# Section 8.3a Switch Statements
+IndentCaseBlocks: true
+# Section 3.4a Indentation
+IndentPPDirectives: None
+# Section 3.4 Indentation
+IndentWidth:     4
+# Section 8.1 Variable Declarations
+JavaScriptWrapImports: true
+# Section 3.3 Blank Lines
+KeepEmptyLinesAtTheStartOfBlocks: true
+# Section 3.3 Blank Lines
+MaxEmptyLinesToKeep: 1
+# Section 3.4a Indentation
+NamespaceIndentation: All
+# Penalites that prioritized rules higher value higher priority.
+PenaltyBreakAssignment: 2
+PenaltyBreakBeforeFirstCallParameter: 19
+PenaltyBreakComment: 300
+PenaltyBreakOpenParenthesis: 0
+PenaltyBreakString: 1000
+PenaltyExcessCharacter: 1000000
+PenaltyReturnTypeOnItsOwnLine: 60
+PenaltyIndentedWhitespace: 0
+# Section 3.1e Spaces
+PointerAlignment: Middle
+# Section 3.2d Defaults to Indent Width
+PPIndentWidth:   -1
+# Section 3.1e Spaces
+ReferenceAlignment: Pointer
+# Section 1.2 Line Widths
+ReflowComments:  true
+# Section 1.3a Braces
+RemoveBracesLLVM: false
+# Section 3.3 Blank Lines
+SeparateDefinitionBlocks: Leave
+# Optional Rule to sort #include names
+SortIncludes: CaseSensitive
+# Section 1.6 Casts
+SpaceAfterCStyleCast: true
+# Section 3.1d Spaces
+SpaceAfterLogicalNot: false
+# Section 3.1b Spaces
+SpaceBeforeAssignmentOperators: true
+# Section 3.1f Spaces
+SpaceBeforeCaseColon: false
+# Section 3.1f Spaces
+SpaceBeforeInheritanceColon: true
+# Section 3.1 Spaces
+SpaceBeforeParens: Custom
+SpaceBeforeParensOptions:
+  # Section 3.1a Spaces
+  AfterControlStatements: true
+  # Section 3.1a Spaces
+  AfterFunctionDefinitionName: true
+  # Section 3.1j Spaces
+  AfterFunctionDeclarationName: true 
+  # Section 3.1a Spaces
+  BeforeNonEmptyParentheses: true
+# Section 3.1e Defaults to Pointer Allignement
+SpaceAroundPointerQualifiers: Default
+# Section 3.1i Spaces
+SpaceInEmptyBlock: false
+# Section 3.1i Spaces
+SpaceInEmptyParentheses: false
+# Section 3.1c Spaces
+SpacesBeforeTrailingComments: 1
+# Section 3.1c Spaces
+SpacesInAngles:  Never
+# Section 3.1i Spaces
+SpacesInConditionalStatement: false
+# Section 3.1i Spaces
+SpacesInContainerLiterals: true
+# Section 3.1i Spaces
+SpacesInCStyleCastParentheses: false
+# Section 3.1c Spaces
+SpacesInLineCommentPrefix:
+  Minimum:         1
+  Maximum:         -1
+# Section 3.1i Spaces
+SpacesInParentheses: false
+# Section 3.1i Spaces
+SpacesInSquareBrackets: false
+# Section 3.1h. Spaces
+SpaceBeforeSquareBrackets: false
+# Section 3.5a Tabs
+UseTab:          Never
+...
+
