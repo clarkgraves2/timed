@@ -7,7 +7,7 @@
  */
 
 /* Define _POSIX_C_SOURCE for POSIX signal handling functions */
-#define _POSIX_C_SOURCE 200809L
+#define _POSIX_C_SOURCE 200809L  /* NOLINT(bugprone-reserved-identifier, cert-dcl37-c, cert-dcl51-cpp) */
 
 #include <signal.h>
 #include <stdbool.h>
@@ -26,12 +26,20 @@
  *
  * This is marked as volatile sig_atomic_t to ensure it can be safely
  * accessed from signal handlers.
+ * Justification for clang-tidy suppression:
+ * Made static and sig_atomic_t for safety they are only accessed and
+ * used withing this module.
  */
+/* NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables) */
 static volatile sig_atomic_t shutdown_requested = 0;
 
 /**
  * @brief Flag to indicate if signal handling is initialized
+ * Justification for clang-tidy suppression:
+ * Made static and sig_atomic_t for safety they are only accessed and
+ * used withing this module.
  */
+/* NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables) */
 static volatile sig_atomic_t initialized = 0;
 
 /*************************************************************************

@@ -44,10 +44,16 @@
  * Static Variables
  *************************************************************************/
   
- /* Server state */
- static volatile bool server_running = false;
- static init_stage_t cleanup_stage = INIT_NONE;
- static socket_descriptor_t socket_descriptors = {-1, -1};
+ /*************************************************************************
+ * Justification: Clang-tidy warning suppression
+ * These variables need to be mutable and maintain state throughout
+ * the server lifecycle. They are protected by being static and are only 
+ * accessed within this module. There are getters and setters to safely 
+ * access and modify values.
+ **************************************************************************/
+static volatile bool server_running = false; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+static init_stage_t cleanup_stage = INIT_NONE; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+static socket_descriptor_t socket_descriptors = {-1, -1}; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
  
  /*************************************************************************
  * Static Function Prototypes
@@ -224,5 +230,5 @@
      cleanup_stage = INIT_NONE;
      return success;
  }
- 
- /*** end of file ***/
+
+/*** end of file ***/

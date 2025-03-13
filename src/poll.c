@@ -30,25 +30,29 @@
 /*************************************************************************
 * Constants and Macros
 *************************************************************************/
-
+#define MAX_FORMAT_LENGTH      (1000)
+#define FORMAT_TRUNCATE_LENGTH (255)
+#define TRUNCATED_BUFFER_SIZE  (256)
+#define FORMAT_DISPLAY_LENGTH  (100)
 #define MAX_BUFFER_SIZE (4096)
 
 /*************************************************************************
 * Static Variables
 *************************************************************************/
 
-// Poll file descriptors array
+/*************************************************************************
+* Justification for global variables clang-tidy suppression:
+* These globals maintain the poll subsystem state between initialization,
+* execution, and cleanup. The poll subsystem is designed as a 
+* singleton module that manages socket polling across the server lifetime.
+* These variables are only modified within the poll module.
+*************************************************************************/
+// NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables)
 static struct pollfd *poll_fds = NULL;
-
-// Number of file descriptors being monitored
 static size_t num_fds = 0;
-
-// Socket descriptors reference
 static const socket_descriptor_t *socket_desc = NULL;
-
-// Server configuration reference
 static const server_config_t *server_cfg = NULL;
-
+// NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables)
 /*************************************************************************
 * Static Function Prototypes
 *************************************************************************/
@@ -288,10 +292,10 @@ handle_udp_datagram(int udp_socket)
    {
        buffer[bytes_read] = '\0';
        // Log only the first 100 chars for very large format strings
-       if (bytes_read > 100) {
-           char truncated[101];
-           strncpy(truncated, buffer, 100);
-           truncated[100] = '\0';
+       if (bytes_read > FORMAT_DISPLAY_LENGTH) {
+           char truncated[FORMAT_DISPLAY_LENGTH];
+           strncpy(truncated, buffer, FORMAT_DISPLAY_LENGTH);
+           truncated[FORMAT_DISPLAY_LENGTH] = '\0';
            syslog_write(INFO, "Received long format string from UDP client: '%s...' (truncated), length: %ld", 
                        truncated, bytes_read);
        } else {
@@ -326,6 +330,8 @@ format_time(const char *p_format_str, char *p_output, size_t output_size)
 {
     time_t now = time(NULL);
     struct tm time_info;
+    const char *p_format = NULL; // Initialize to NULL
+    char truncated_format[TRUNCATED_BUFFER_SIZE] = {0}; // Fixed size with constant
     
     if (NULL == p_output || output_size == 0 || now == (time_t)-1)
     {
@@ -338,33 +344,63 @@ format_time(const char *p_format_str, char *p_output, size_t output_size)
         return false;
     }
     
-    // Handle the format string
-    const char *p_format;
-    char truncated_format[256] = {0}; // Buffer for truncated format string if needed
+    // Check if format string is just a newline or only whitespace
+    bool is_only_whitespace = true;
+    if (p_format_str != NULL) 
+    {
+        size_t idx = 0;
+        while (p_format_str[idx] != '\0') 
+        {
+            if (p_format_str[idx] != ' ' && p_format_str[idx] != '\t' && 
+                p_format_str[idx] != '\n' && p_format_str[idx] != '\r')
+            {
+                is_only_whitespace = false;
+                break;
+            }
+            idx++;
+        }
+    }
     
     // Use provided format or default
-    if (NULL == p_format_str || p_format_str[0] == '\0')
-    {
-        p_format = server_cfg->time_format;
-        syslog_write(INFO, "Using default format: '%s'", server_cfg->time_format);
-    }
-    else
-    {
-        // Check for extremely large format strings
+    p_format = (NULL != p_format_str && p_format_str[0] != '\0' && !is_only_whitespace) 
+                ? p_format_str 
+                : server_cfg->time_format;
+    
+    // Check if format string is too long to display in logs
+    if (p_format_str != NULL && !is_only_whitespace) {
         size_t format_len = strlen(p_format_str);
-        if (format_len > 1000)
+        
+        // Truncate very long format strings for safety
+        if (format_len > MAX_FORMAT_LENGTH)
         {
-            // Truncate large format strings - copy just the first portion
-            strncpy(truncated_format, p_format_str, 255);
-            truncated_format[255] = '\0';
+            // Truncate format string to prevent buffer overflow
+            strncpy(truncated_format, p_format_str, FORMAT_TRUNCATE_LENGTH);
+            truncated_format[FORMAT_TRUNCATE_LENGTH] = '\0';
             p_format = truncated_format;
-            syslog_write(INFO, "Truncated very large format string (%zu bytes) to 255 bytes", format_len);
+            
+            syslog_write(WARNING, "Format string too long (%zu bytes), truncated", format_len);
+        }
+        
+        // For logging, truncate display if it's too long
+        if (format_len > FORMAT_DISPLAY_LENGTH)
+        {
+            char display_format[FORMAT_DISPLAY_LENGTH + 1];
+            strncpy(display_format, p_format_str, FORMAT_DISPLAY_LENGTH);
+            display_format[FORMAT_DISPLAY_LENGTH] = '\0';
+            syslog_write(INFO, "Using provided format (truncated): '%s...'", display_format);
         }
         else
         {
-            p_format = p_format_str;
-            syslog_write(INFO, "Using provided format: '%s'", p_format);
+            syslog_write(INFO, "Using provided format: '%s'", p_format_str);
         }
+    }
+    else if (p_format_str == NULL)
+    {
+        syslog_write(INFO, "Format string is NULL, using default format: '%s'", server_cfg->time_format);
+    }
+    else
+    {
+        syslog_write(INFO, "Format string is empty or whitespace, using default format: '%s'", server_cfg->time_format);
     }
     
     // Format time
@@ -372,16 +408,13 @@ format_time(const char *p_format_str, char *p_output, size_t output_size)
     
     if (result > 0)
     {
-        syslog_write(INFO, "Successfully formatted time");
+        syslog_write(INFO, "Formatted time result: '%s'", p_output);
         return true;
     }
-    else
-    {
-        syslog_write(ERROR, "Failed to format time with format, using default format");
-        // Fallback to default format
-        result = strftime(p_output, output_size, server_cfg->time_format, &time_info);
-        return (result > 0);
-    }
+    
+    // Removed 'else' after 'return'
+    syslog_write(ERROR, "Failed to format time with format: '%s'", p_format);
+    return false;
 }
 
 /*** end of file ***/

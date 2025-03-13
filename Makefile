@@ -33,8 +33,13 @@ CLANG_TIDY = clang-tidy
 CLANG_TIDY_CHECKS = -*,bugprone-*,cert-*,clang-analyzer-*,cppcoreguidelines-*,misc-*,performance-*,portability-*,readability-*,-readability-implicit-bool-conversion,-readability-magic-numbers
 CLANG_TIDY_CONFIG = -config="{Checks: '$(CLANG_TIDY_CHECKS)', WarningsAsErrors: '', HeaderFilterRegex: '.*', FormatStyle: 'none'}"
 
+# Valgrind configuration
+VALGRIND = valgrind
+VALGRIND_FLAGS = --leak-check=full --show-leak-kinds=all --track-origins=yes --verbose
+VALGRIND_LOG = valgrind_report.txt
+
 # Default target
-.PHONY: all clean check dirs debug profile test_clients protocol_tests start_server stop_server
+.PHONY: all clean check valgrind dirs debug profile test_clients protocol_tests start_server start_server_valgrind stop_server tidy
 
 all: dirs $(TARGET)
 
@@ -86,6 +91,12 @@ start_server: $(TARGET)
 	@./$(TARGET) & echo $$! > .server.pid
 	@sleep 1  # Give it time to start up properly
 
+# Start server with Valgrind for testing
+start_server_valgrind: $(TARGET)
+	@echo "Starting timed server with Valgrind in background..."
+	@$(VALGRIND) $(VALGRIND_FLAGS) --log-file=$(VALGRIND_LOG) ./$(TARGET) & echo $$! > .server.pid
+	@sleep 2  # Give it more time to start up with Valgrind
+
 # Stop server after testing
 stop_server:
 	@if [ -f .server.pid ]; then \
@@ -103,12 +114,23 @@ protocol_tests: test_clients
 check: $(TARGET) test_clients start_server protocol_tests stop_server
 	@echo "All tests completed."
 
+# Run all tests with Valgrind
+valgrind: $(TARGET) test_clients start_server_valgrind protocol_tests stop_server
+	@echo "All tests completed with Valgrind."
+	@if [ -f $(VALGRIND_LOG) ]; then \
+		echo "\nValgrind Report Summary:"; \
+		grep -A 2 "LEAK SUMMARY" $(VALGRIND_LOG) || echo "No leak summary found"; \
+		echo "\nCheck $(VALGRIND_LOG) for full details."; \
+	else \
+		echo "No Valgrind log found at $(VALGRIND_LOG)"; \
+	fi
+
 # Run clang-tidy on all source files
 tidy:
 	$(CLANG_TIDY) $(CLANG_TIDY_CONFIG) $(SRCS) -- $(CFLAGS) $(INCLUDES)
 
 clean:
-	rm -f $(TARGET) server.log .server.pid
+	rm -f $(TARGET) server.log .server.pid $(VALGRIND_LOG)
 	rm -rf $(OBJ_DIR)
 	rm -f $(TEST_CLIENT_BINS)
 	rm -f test_summary_run_tcp_tests.sh

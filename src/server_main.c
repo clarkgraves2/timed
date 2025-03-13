@@ -21,7 +21,7 @@ int main(void)
 
     if (!config_init(&config)) // Set configs with default values.
     {
-        fprintf(stderr, "Failed to initialize server configuration\n");
+        (void)fprintf(stderr, "Failed to initialize server configuration\n");
         return EXIT_FAILURE;
     }
 
@@ -29,7 +29,7 @@ int main(void)
 
     if (!syslog_init(&config))  // Initialize logging system.
     {
-        fprintf(stderr, "Failed to initialize logging system\n");
+        (void)fprintf(stderr, "Failed to initialize logging system\n");
         return EXIT_FAILURE;
     }
     
@@ -64,7 +64,7 @@ int main(void)
     
     if (!syslog_shutdown()) // Shuts down syslog, the first initialized subsystem.
     {
-        fprintf(stderr, "Failed to shut down logging system\n");
+        (void)fprintf(stderr, "Failed to shut down logging system\n");
         return EXIT_FAILURE;
     }
     

@@ -9,7 +9,6 @@
 */
 
 #include "../include/syslog.h"
-
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdarg.h>
@@ -48,8 +47,11 @@ static const char * const SYSLOG_TYPE_STRINGS[] =
 * Static Variables
 *************************************************************************/
 
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 static FILE* log_file = NULL;
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 static bool initialized = false;
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /*************************************************************************
@@ -129,6 +131,7 @@ syslog_write(syslog_type_t type, const char * p_format, ...)
 
     // Format message with variable arguments 
     va_start(args, p_format);
+    // NOLINTNEXTLINE(clang-analyzer-valist.Uninitialized)
     vsnprintf_result = vsnprintf(formatted_message, sizeof(formatted_message), p_format, args);
     va_end(args);
     
