@@ -37,22 +37,34 @@
 #define MAX_BUFFER_SIZE (4096)
 
 /*************************************************************************
-* Static Variables
+* Module State Structure
 *************************************************************************/
+typedef struct {
+    struct pollfd *poll_fds;
+    size_t num_fds;
+    const socket_descriptor_t *socket_desc;
+    const server_config_t *server_cfg;
+    bool initialized;
+} poll_state_t;
 
 /*************************************************************************
-* Justification for global variables clang-tidy suppression:
-* These globals maintain the poll subsystem state between initialization,
-* execution, and cleanup. The poll subsystem is designed as a 
-* singleton module that manages socket polling across the server lifetime.
-* These variables are only modified within the poll module.
-*************************************************************************/
+* Justification for clang-tidy global suppression:
+* This variable implements a singleton module pattern in C. The poll subsystem
+* is designed as a singleton with internal state that must persist between
+* calls to poll_init, poll_run, and poll_cleanup. 
+*
+* The variable is:
+* 1. Static - restricting scope to this module only
+* 2. Encapsulated - only accessed through public API functions
+* 3. Protected - initialization state is checked before use
+* 
+* No thread-safety issues exist since the server is single-threaded.
+* Making this const would require complex and potentially unsafe const-casting.
+**************************************************************************/
 // NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables)
-static struct pollfd *poll_fds = NULL;
-static size_t num_fds = 0;
-static const socket_descriptor_t *socket_desc = NULL;
-static const server_config_t *server_cfg = NULL;
+static poll_state_t g_poll_state = {0};
 // NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables)
+
 /*************************************************************************
 * Static Function Prototypes
 *************************************************************************/
@@ -103,35 +115,45 @@ poll_init(const server_config_t *p_config, const socket_descriptor_t *p_descript
         return false;
     }
     
+    // Check if already initialized to prevent double initialization
+    if (g_poll_state.initialized) 
+    {
+        syslog_write(ERROR, "Poll subsystem already initialized");
+        return false;
+    }
+    
     // Store config and descriptors
-    server_cfg = p_config;
-    socket_desc = p_descriptors;
+    g_poll_state.server_cfg = p_config;
+    g_poll_state.socket_desc = p_descriptors;
     
     // Allocate poll fds array
-    num_fds = 2; // TCP and UDP sockets
-    poll_fds = calloc(num_fds, sizeof(struct pollfd));
-    if (NULL == poll_fds)
+    g_poll_state.num_fds = 2; // TCP and UDP sockets
+    g_poll_state.poll_fds = calloc(g_poll_state.num_fds, sizeof(struct pollfd));
+    if (NULL == g_poll_state.poll_fds)
     {
         syslog_write(CRITICAL, "Failed to allocate memory for poll fds");
         return false;
     }
     
     // Set up TCP socket for polling
-    poll_fds[0].fd = p_descriptors->tcp_socket;
-    poll_fds[0].events = POLLIN;
+    g_poll_state.poll_fds[0].fd = p_descriptors->tcp_socket;
+    g_poll_state.poll_fds[0].events = POLLIN;
     
     // Set up UDP socket for polling
-    poll_fds[1].fd = p_descriptors->udp_socket;
-    poll_fds[1].events = POLLIN;
+    g_poll_state.poll_fds[1].fd = p_descriptors->udp_socket;
+    g_poll_state.poll_fds[1].events = POLLIN;
     
-    syslog_write(INFO, "Poll subsystem initialized with %zu fds", num_fds);
+    // Mark as initialized
+    g_poll_state.initialized = true;
+    
+    syslog_write(INFO, "Poll subsystem initialized with %zu fds", g_poll_state.num_fds);
     return true;
 }
 
 bool 
 poll_run(void)
 {
-    if (NULL == poll_fds || NULL == server_cfg || NULL == socket_desc)
+    if (!g_poll_state.initialized || NULL == g_poll_state.poll_fds)
     {
         syslog_write(ERROR, "Poll subsystem not initialized");
         return false;
@@ -142,7 +164,9 @@ poll_run(void)
     while (!signal_handler_shutdown_requested())
     {
         // Wait for events
-        int poll_result = poll(poll_fds, (nfds_t)num_fds, server_cfg->poll_timeout);
+        int poll_result = poll(g_poll_state.poll_fds, 
+                              (nfds_t)g_poll_state.num_fds, 
+                              g_poll_state.server_cfg->poll_timeout);
         
         // Check for errors
         if (poll_result < 0)
@@ -164,15 +188,15 @@ poll_run(void)
         }
         
         // Check for TCP events
-        if (poll_fds[0].revents & POLLIN)
+        if (g_poll_state.poll_fds[0].revents & POLLIN)
         {
-            handle_tcp_connection(socket_desc->tcp_socket);
+            handle_tcp_connection(g_poll_state.socket_desc->tcp_socket);
         }
         
         // Check for UDP events
-        if (poll_fds[1].revents & POLLIN)
+        if (g_poll_state.poll_fds[1].revents & POLLIN)
         {
-            handle_udp_datagram(socket_desc->udp_socket);
+            handle_udp_datagram(g_poll_state.socket_desc->udp_socket);
         }
     }
     
@@ -183,15 +207,24 @@ poll_run(void)
 bool 
 poll_cleanup(void)
 {
-    if (NULL != poll_fds)
+    // We can still call cleanup on an uninitialized module, but log a warning
+    if (!g_poll_state.initialized) 
     {
-        free(poll_fds);
-        poll_fds = NULL;
+        syslog_write(WARNING, "Attempt to clean up uninitialized poll subsystem");
+    }
+
+    // Free resources if allocated
+    if (NULL != g_poll_state.poll_fds)
+    {
+        free(g_poll_state.poll_fds);
+        g_poll_state.poll_fds = NULL;
     }
     
-    num_fds = 0;
-    socket_desc = NULL;
-    server_cfg = NULL;
+    // Reset all state
+    g_poll_state.num_fds = 0;
+    g_poll_state.socket_desc = NULL;
+    g_poll_state.server_cfg = NULL;
+    g_poll_state.initialized = false;
     
     syslog_write(INFO, "Poll subsystem cleaned up");
     return true;
@@ -211,57 +244,57 @@ handle_tcp_connection(int tcp_socket)
    int client_fd = -1;
    ssize_t bytes_read = 0;
 
-// Accept new connection
-client_fd = accept(tcp_socket, (struct sockaddr *)&client_addr, &addr_len);
-if (client_fd < 0)
-{
-   syslog_write(ERROR, "Failed to accept TCP connection: %s", strerror(errno));
-   return;
-}
+   // Accept new connection
+   client_fd = accept(tcp_socket, (struct sockaddr *)&client_addr, &addr_len);
+   if (client_fd < 0)
+   {
+      syslog_write(ERROR, "Failed to accept TCP connection: %s", strerror(errno));
+      return;
+   }
 
-// Log client connection
-syslog_write(INFO, "TCP connection from %s:%d", 
-           inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+   // Log client connection
+   syslog_write(INFO, "TCP connection from %s:%d", 
+              inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
 
-// Read client request (format string)
-bytes_read = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
-if (bytes_read < 0)
-{
-   syslog_write(ERROR, "Error reading from TCP client: %s", strerror(errno));
+   // Read client request (format string)
+   bytes_read = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
+   if (bytes_read < 0)
+   {
+      syslog_write(ERROR, "Error reading from TCP client: %s", strerror(errno));
+      close(client_fd);
+      return;
+   }
+
+   // Null-terminate the request string
+   if (bytes_read > 0)
+   {
+      buffer[bytes_read] = '\0';
+      syslog_write(INFO, "Received format string from TCP client: '%s', length: %ld", buffer, bytes_read);
+   }
+   else
+   {
+      syslog_write(INFO, "Received empty format string from TCP client (bytes_read=%ld)", bytes_read);
+   }
+
+   // Format time according to request (or use default if empty)
+   if (!format_time(bytes_read > 0 ? buffer : NULL, time_buffer, sizeof(time_buffer)))
+   {
+      syslog_write(ERROR, "Failed to format time for TCP client");
+      close(client_fd);
+      return;
+   }
+
+   // Debug: Log the formatted time
+   syslog_write(INFO, "Sending formatted time to TCP client: '%s'", time_buffer);
+
+   // Send formatted time to client
+   if (send(client_fd, time_buffer, strlen(time_buffer), 0) < 0)
+   {
+      syslog_write(ERROR, "Failed to send response to TCP client: %s", strerror(errno));
+   }
+
+   // Close client connection
    close(client_fd);
-   return;
-}
-
-// Null-terminate the request string
-if (bytes_read > 0)
-{
-   buffer[bytes_read] = '\0';
-   syslog_write(INFO, "Received format string from TCP client: '%s', length: %ld", buffer, bytes_read);
-}
-else
-{
-   syslog_write(INFO, "Received empty format string from TCP client (bytes_read=%ld)", bytes_read);
-}
-
-// Format time according to request (or use default if empty)
-if (!format_time(bytes_read > 0 ? buffer : NULL, time_buffer, sizeof(time_buffer)))
-{
-   syslog_write(ERROR, "Failed to format time for TCP client");
-   close(client_fd);
-   return;
-}
-
-// Debug: Log the formatted time
-syslog_write(INFO, "Sending formatted time to TCP client: '%s'", time_buffer);
-
-// Send formatted time to client
-if (send(client_fd, time_buffer, strlen(time_buffer), 0) < 0)
-{
-   syslog_write(ERROR, "Failed to send response to TCP client: %s", strerror(errno));
-}
-
-// Close client connection
-close(client_fd);
 }
 
 static void
@@ -333,6 +366,13 @@ format_time(const char *p_format_str, char *p_output, size_t output_size)
     const char *p_format = NULL; // Initialize to NULL
     char truncated_format[TRUNCATED_BUFFER_SIZE] = {0}; // Fixed size with constant
     
+    // Validate our module state and parameters
+    if (!g_poll_state.initialized || NULL == g_poll_state.server_cfg)
+    {
+        syslog_write(ERROR, "Poll subsystem not initialized properly");
+        return false;
+    }
+    
     if (NULL == p_output || output_size == 0 || now == (time_t)-1)
     {
         return false;
@@ -364,7 +404,7 @@ format_time(const char *p_format_str, char *p_output, size_t output_size)
     // Use provided format or default
     p_format = (NULL != p_format_str && p_format_str[0] != '\0' && !is_only_whitespace) 
                 ? p_format_str 
-                : server_cfg->time_format;
+                : g_poll_state.server_cfg->time_format;
     
     // Check if format string is too long to display in logs
     if (p_format_str != NULL && !is_only_whitespace) {
@@ -396,11 +436,11 @@ format_time(const char *p_format_str, char *p_output, size_t output_size)
     }
     else if (p_format_str == NULL)
     {
-        syslog_write(INFO, "Format string is NULL, using default format: '%s'", server_cfg->time_format);
+        syslog_write(INFO, "Format string is NULL, using default format: '%s'", g_poll_state.server_cfg->time_format);
     }
     else
     {
-        syslog_write(INFO, "Format string is empty or whitespace, using default format: '%s'", server_cfg->time_format);
+        syslog_write(INFO, "Format string is empty or whitespace, using default format: '%s'", g_poll_state.server_cfg->time_format);
     }
     
     // Format time
@@ -412,7 +452,6 @@ format_time(const char *p_format_str, char *p_output, size_t output_size)
         return true;
     }
     
-    // Removed 'else' after 'return'
     syslog_write(ERROR, "Failed to format time with format: '%s'", p_format);
     return false;
 }

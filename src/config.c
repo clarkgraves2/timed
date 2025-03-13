@@ -31,6 +31,6 @@ bool config_init(server_config_t * p_config)
     p_config->time_format = CONFIG_TIME_FORMAT;
     
     return true;
-}
+} 
 
 /*** end of file ***/
