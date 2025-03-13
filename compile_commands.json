@@ -1,0 +1,163 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-Waggregate-return",
+      "-Wwrite-strings",
+      "-Wvla",
+      "-Wfloat-equal",
+      "-std=c99",
+      "-D_POSIX_C_SOURCE=200809L",
+      "-Iinclude",
+      "-I.",
+      "-c",
+      "-o",
+      "obj/config.o",
+      "src/config.c"
+    ],
+    "directory": "/home/clark_graves/timed",
+    "file": "/home/clark_graves/timed/src/config.c",
+    "output": "/home/clark_graves/timed/obj/config.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-Waggregate-return",
+      "-Wwrite-strings",
+      "-Wvla",
+      "-Wfloat-equal",
+      "-std=c99",
+      "-D_POSIX_C_SOURCE=200809L",
+      "-Iinclude",
+      "-I.",
+      "-c",
+      "-o",
+      "obj/poll.o",
+      "src/poll.c"
+    ],
+    "directory": "/home/clark_graves/timed",
+    "file": "/home/clark_graves/timed/src/poll.c",
+    "output": "/home/clark_graves/timed/obj/poll.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-Waggregate-return",
+      "-Wwrite-strings",
+      "-Wvla",
+      "-Wfloat-equal",
+      "-std=c99",
+      "-D_POSIX_C_SOURCE=200809L",
+      "-Iinclude",
+      "-I.",
+      "-c",
+      "-o",
+      "obj/signal_handler.o",
+      "src/signal_handler.c"
+    ],
+    "directory": "/home/clark_graves/timed",
+    "file": "/home/clark_graves/timed/src/signal_handler.c",
+    "output": "/home/clark_graves/timed/obj/signal_handler.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-Waggregate-return",
+      "-Wwrite-strings",
+      "-Wvla",
+      "-Wfloat-equal",
+      "-std=c99",
+      "-D_POSIX_C_SOURCE=200809L",
+      "-Iinclude",
+      "-I.",
+      "-c",
+      "-o",
+      "obj/socket.o",
+      "src/socket.c"
+    ],
+    "directory": "/home/clark_graves/timed",
+    "file": "/home/clark_graves/timed/src/socket.c",
+    "output": "/home/clark_graves/timed/obj/socket.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-Waggregate-return",
+      "-Wwrite-strings",
+      "-Wvla",
+      "-Wfloat-equal",
+      "-std=c99",
+      "-D_POSIX_C_SOURCE=200809L",
+      "-Iinclude",
+      "-I.",
+      "-c",
+      "-o",
+      "obj/syslog.o",
+      "src/syslog.c"
+    ],
+    "directory": "/home/clark_graves/timed",
+    "file": "/home/clark_graves/timed/src/syslog.c",
+    "output": "/home/clark_graves/timed/obj/syslog.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-Waggregate-return",
+      "-Wwrite-strings",
+      "-Wvla",
+      "-Wfloat-equal",
+      "-std=c99",
+      "-D_POSIX_C_SOURCE=200809L",
+      "-Iinclude",
+      "-I.",
+      "-c",
+      "-o",
+      "obj/server.o",
+      "src/server.c"
+    ],
+    "directory": "/home/clark_graves/timed",
+    "file": "/home/clark_graves/timed/src/server.c",
+    "output": "/home/clark_graves/timed/obj/server.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-Waggregate-return",
+      "-Wwrite-strings",
+      "-Wvla",
+      "-Wfloat-equal",
+      "-std=c99",
+      "-D_POSIX_C_SOURCE=200809L",
+      "-Iinclude",
+      "-I.",
+      "-c",
+      "-o",
+      "obj/server_main.o",
+      "src/server_main.c"
+    ],
+    "directory": "/home/clark_graves/timed",
+    "file": "/home/clark_graves/timed/src/server_main.c",
+    "output": "/home/clark_graves/timed/obj/server_main.o"
+  }
+]
